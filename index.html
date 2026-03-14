@@ -1,0 +1,973 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏 - HTML5 Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto Mono', monospace;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 2.5rem;
+    color: #00ff9d;
+    text-shadow: 0 0 10px #00ff9d;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    color: #a0a0ff;
+    opacity: 0.8;
+}
+
+/* Game Area */
+.game-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.canvas-wrapper {
+    flex: 1;
+    min-width: 400px;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 3px solid #00ff9d;
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+    background: #000;
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.game-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.overlay-content {
+    text-align: center;
+    padding: 30px;
+    background: rgba(26, 26, 46, 0.9);
+    border-radius: 15px;
+    border: 2px solid #00ff9d;
+    max-width: 80%;
+}
+
+.overlay-content h2 {
+    font-family: 'Press Start 2P', cursive;
+    color: #ff0055;
+    margin-bottom: 15px;
+    font-size: 1.8rem;
+}
+
+.overlay-content p {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+
+.overlay-content button {
+    background: #00ff9d;
+    color: #000;
+    border: none;
+    padding: 12px 24px;
+    font-family: 'Roboto Mono', monospace;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 5px 10px;
+    transition: all 0.3s;
+    font-size: 1rem;
+}
+
+.overlay-content button:hover {
+    background: #00cc7a;
+    transform: scale(1.05);
+}
+
+/* Controls Panel */
+.controls-panel {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.score-board, .high-score, .game-status, .difficulty {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(0, 255, 157, 0.3);
+}
+
+.controls-panel h3 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1rem;
+    color: #00ff9d;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.score-value, .status-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 10px #fff;
+}
+
+.high-score .score-value {
+    color: #ffd700;
+}
+
+.status-value {
+    font-size: 1.5rem;
+    color: #a0a0ff;
+}
+
+.difficulty-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.diff-btn {
+    flex: 1;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #555;
+    color: #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.diff-btn.active {
+    background: #00ff9d;
+    color: #000;
+    border-color: #00ff9d;
+}
+
+.diff-btn:hover {
+    background: rgba(0, 255, 157, 0.5);
+    color: #fff;
+}
+
+/* Instructions */
+.instructions {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(160, 160, 255, 0.3);
+}
+
+.instructions h3 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.2rem;
+    color: #a0a0ff;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.control-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px;
+    margin-bottom: 15px;
+}
+
+.control-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid #555;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.desc {
+    font-size: 1rem;
+    color: #ccc;
+}
+
+.touch-hint {
+    font-size: 0.9rem;
+    color: #888;
+    font-style: italic;
+}
+
+/* Touch Controls */
+.touch-controls {
+    display: none; /* hidden by default, shown via media query */
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.touch-row {
+    display: flex;
+    gap: 20px;
+}
+
+.touch-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(0, 255, 157, 0.2);
+    border: 2px solid #00ff9d;
+    color: #fff;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.touch-btn:active {
+    background: rgba(0, 255, 157, 0.8);
+    transform: scale(0.95);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #888;
+    font-size: 0.9rem;
+}
+
+footer i.fa-heart {
+    color: #ff0055;
+}
+
+.copyright {
+    margin-top: 5px;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Responsive */
+@media (max-width: 850px) {
+    .game-area {
+        flex-direction: column;
+    }
+    .canvas-wrapper {
+        min-width: 100%;
+    }
+    header h1 {
+        font-size: 2rem;
+    }
+    .control-list {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+    }
+    .score-value {
+        font-size: 2rem;
+    }
+    .touch-controls {
+        display: flex;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-gamepad"></i> 贪吃蛇游戏</h1>
+            <p class="subtitle">经典贪吃蛇游戏，支持键盘和触摸控制</p>
+        </header>
+
+        <main>
+            <div class="game-area">
+                <div class="canvas-wrapper">
+                    <canvas id="gameCanvas" width="400" height="400"></canvas>
+                    <div class="game-overlay" id="gameOverlay">
+                        <div class="overlay-content">
+                            <h2 id="overlayTitle">游戏结束</h2>
+                            <p id="overlayMessage">你的得分: <span id="finalScore">0</span></p>
+                            <button id="restartButton"><i class="fas fa-redo"></i> 重新开始</button>
+                            <button id="menuButton"><i class="fas fa-home"></i> 主菜单</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-panel">
+                    <div class="score-board">
+                        <h3><i class="fas fa-star"></i> 得分</h3>
+                        <div class="score-value" id="score">0</div>
+                    </div>
+                    <div class="high-score">
+                        <h3><i class="fas fa-trophy"></i> 最高分</h3>
+                        <div class="score-value" id="highScore">0</div>
+                    </div>
+                    <div class="game-status">
+                        <h3><i class="fas fa-info-circle"></i> 状态</h3>
+                        <div class="status-value" id="status">准备中</div>
+                    </div>
+                    <div class="difficulty">
+                        <h3><i class="fas fa-sliders-h"></i> 难度</h3>
+                        <div class="difficulty-buttons">
+                            <button class="diff-btn active" data-speed="150">简单</button>
+                            <button class="diff-btn" data-speed="100">中等</button>
+                            <button class="diff-btn" data-speed="70">困难</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <h3><i class="fas fa-keyboard"></i> 控制说明</h3>
+                <div class="control-list">
+                    <div class="control-item">
+                        <span class="key"><i class="fas fa-arrow-up"></i></span>
+                        <span class="key"><i class="fas fa-arrow-down"></i></span>
+                        <span class="key"><i class="fas fa-arrow-left"></i></span>
+                        <span class="key"><i class="fas fa-arrow-right"></i></span>
+                        <span class="desc">方向键控制移动</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">W</span>
+                        <span class="key">A</span>
+                        <span class="key">S</span>
+                        <span class="key">D</span>
+                        <span class="desc">WASD 替代控制</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key"><i class="fas fa-hand-point-up"></i></span>
+                        <span class="desc">触摸设备滑动控制</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">空格</span>
+                        <span class="desc">暂停 / 继续</span>
+                    </div>
+                </div>
+                <p class="touch-hint">在移动设备上，你也可以使用下方的方向按钮。</p>
+            </div>
+
+            <div class="touch-controls" id="touchControls">
+                <div class="touch-row">
+                    <button class="touch-btn" id="upBtn"><i class="fas fa-arrow-up"></i></button>
+                </div>
+                <div class="touch-row">
+                    <button class="touch-btn" id="leftBtn"><i class="fas fa-arrow-left"></i></button>
+                    <button class="touch-btn" id="downBtn"><i class="fas fa-arrow-down"></i></button>
+                    <button class="touch-btn" id="rightBtn"><i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>使用 <i class="fas fa-heart"></i> 和 HTML5 Canvas & JavaScript 构建</p>
+            <p class="copyright">© 2026 贪吃蛇游戏项目</p>
+        </footer>
+    </div>
+<script>
+// Global error handler
+window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+    // 不再弹出alert，避免干扰
+});
+
+class Snake {
+    constructor(gridSize) {
+        this.gridSize = gridSize;
+        this.reset();
+    }
+
+    reset() {
+        this.body = [
+            { x: 5 * this.gridSize, y: 10 * this.gridSize },
+            { x: 4 * this.gridSize, y: 10 * this.gridSize },
+            { x: 3 * this.gridSize, y: 10 * this.gridSize }
+        ];
+        this.direction = 'right';
+        this.nextDirection = 'right';
+    }
+
+    get head() {
+        return this.body[0];
+    }
+
+    changeDirection(newDir) {
+        // Prevent 180-degree turns
+        const opposites = {
+            up: 'down',
+            down: 'up',
+            left: 'right',
+            right: 'left'
+        };
+        if (opposites[newDir] !== this.direction) {
+            this.nextDirection = newDir;
+        }
+    }
+
+    move() {
+        // Update direction
+        this.direction = this.nextDirection;
+
+        // Create new head based on direction
+        const head = { ...this.head };
+        switch (this.direction) {
+            case 'up':
+                head.y -= this.gridSize;
+                break;
+            case 'down':
+                head.y += this.gridSize;
+                break;
+            case 'left':
+                head.x -= this.gridSize;
+                break;
+            case 'right':
+                head.x += this.gridSize;
+                break;
+        }
+
+        // Add new head to front
+        this.body.unshift(head);
+        // Remove tail (unless growing)
+        this.body.pop();
+    }
+
+    grow() {
+        // Duplicate the tail to extend length
+        const tail = { ...this.body[this.body.length - 1] };
+        this.body.push(tail);
+    }
+
+    draw(ctx) {
+        // Draw each segment
+        this.body.forEach((segment, index) => {
+            const isHead = index === 0;
+            ctx.fillStyle = isHead ? '#00ff9d' : '#00cc7a';
+            ctx.fillRect(segment.x, segment.y, this.gridSize, this.gridSize);
+
+            // Add a border
+            ctx.strokeStyle = '#003322';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(segment.x, segment.y, this.gridSize, this.gridSize);
+
+            // Eyes on head
+            if (isHead) {
+                ctx.fillStyle = '#000';
+                const eyeSize = this.gridSize / 5;
+                const offset = this.gridSize / 3;
+                if (this.direction === 'right') {
+                    ctx.fillRect(segment.x + this.gridSize - offset, segment.y + offset, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x + this.gridSize - offset, segment.y + this.gridSize - offset - eyeSize, eyeSize, eyeSize);
+                } else if (this.direction === 'left') {
+                    ctx.fillRect(segment.x + offset, segment.y + offset, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x + offset, segment.y + this.gridSize - offset - eyeSize, eyeSize, eyeSize);
+                } else if (this.direction === 'up') {
+                    ctx.fillRect(segment.x + offset, segment.y + offset, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x + this.gridSize - offset - eyeSize, segment.y + offset, eyeSize, eyeSize);
+                } else if (this.direction === 'down') {
+                    ctx.fillRect(segment.x + offset, segment.y + this.gridSize - offset, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x + this.gridSize - offset - eyeSize, segment.y + this.gridSize - offset, eyeSize, eyeSize);
+                }
+            }
+        });
+    }
+}class Food {
+    constructor(gridSize, width, height) {
+        this.gridSize = gridSize;
+        this.width = width;
+        this.height = height;
+        this.x = 0;
+        this.y = 0;
+        this.generate([]);
+    }
+
+    generate(snakeBody = []) {
+        // Generate random grid position
+        let newX, newY;
+        let overlapping;
+        do {
+            newX = Math.floor(Math.random() * (this.width / this.gridSize)) * this.gridSize;
+            newY = Math.floor(Math.random() * (this.height / this.gridSize)) * this.gridSize;
+            overlapping = snakeBody.some(segment => segment.x === newX && segment.y === newY);
+        } while (overlapping);
+
+        this.x = newX;
+        this.y = newY;
+    }
+
+    draw(ctx) {
+        // Draw food as a red apple with a green stem
+        ctx.fillStyle = '#ff5555';
+        ctx.beginPath();
+        ctx.arc(
+            this.x + this.gridSize / 2,
+            this.y + this.gridSize / 2,
+            this.gridSize / 2 - 2,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+
+        // Stem
+        ctx.fillStyle = '#00aa00';
+        ctx.fillRect(
+            this.x + this.gridSize / 2 - 2,
+            this.y + 2,
+            4,
+            this.gridSize / 4
+        );
+
+        // Highlight
+        ctx.fillStyle = '#ff8888';
+        ctx.beginPath();
+        ctx.arc(
+            this.x + this.gridSize / 2 - 3,
+            this.y + this.gridSize / 2 - 3,
+            this.gridSize / 6,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+    }
+}class Controls {
+    constructor() {
+        this.direction = 'right';
+        this.nextDirection = 'right';
+        this.touchStartX = 0;
+        this.touchStartY = 0;
+        this.initKeyboard();
+        this.initTouch();
+    }
+
+    initKeyboard() {
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    this.setDirection('up');
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    this.setDirection('down');
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    this.setDirection('left');
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    this.setDirection('right');
+                    break;
+            }
+        });
+    }
+
+    initTouch() {
+        const canvas = document.getElementById('gameCanvas');
+        if (!canvas) return;
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            this.touchStartX = touch.clientX;
+            this.touchStartY = touch.clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - this.touchStartX;
+            const deltaY = touch.clientY - this.touchStartY;
+            const minSwipeDistance = 30;
+
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
+                if (Math.abs(deltaX) > minSwipeDistance) {
+                    if (deltaX > 0) {
+                        this.setDirection('right');
+                    } else {
+                        this.setDirection('left');
+                    }
+                }
+            } else {
+                // Vertical swipe
+                if (Math.abs(deltaY) > minSwipeDistance) {
+                    if (deltaY > 0) {
+                        this.setDirection('down');
+                    } else {
+                        this.setDirection('up');
+                    }
+                }
+            }
+        });
+    }
+
+    setDirection(newDir) {
+        // Prevent 180-degree turns
+        const opposites = {
+            up: 'down',
+            down: 'up',
+            left: 'right',
+            right: 'left'
+        };
+        if (opposites[newDir] !== this.direction) {
+            this.nextDirection = newDir;
+            if (this.onDirectionChange) {
+                this.onDirectionChange(newDir);
+            }
+        }
+    }
+
+    getDirection() {
+        return this.direction;
+    }
+
+    update() {
+        this.direction = this.nextDirection;
+    }
+}class UI {
+    constructor() {
+        this.scoreElement = document.getElementById('score');
+        this.highScoreElement = document.getElementById('highScore');
+        this.statusElement = document.getElementById('status');
+    }
+
+    updateScore(score) {
+        this.scoreElement.textContent = score;
+    }
+
+    updateHighScore(highScore) {
+        this.highScoreElement.textContent = highScore;
+    }
+
+    updateStatus(status) {
+        this.statusElement.textContent = status;
+    }
+
+    showMessage(title, text) {
+        // Could be extended for toast notifications
+        console.log(`${title}: ${text}`);
+    }
+}
+class Game {
+    constructor() {
+        console.log('Game constructor started');
+        this.canvas = document.getElementById('gameCanvas');
+        console.log('Canvas element:', this.canvas);
+        this.ctx = this.canvas.getContext('2d');
+        this.gridSize = 20;
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+
+        this.snake = new Snake(this.gridSize);
+        this.food = new Food(this.gridSize, this.width, this.height);
+        this.controls = new Controls();
+        this.ui = new UI();
+
+        this.score = 0;
+        this.highScore = localStorage.getItem('snakeHighScore') || 0;
+        this.difficulty = 'medium';
+        this.speed = 100; // ms per move
+        this.isRunning = false;
+        this.isPaused = false;
+        this.gameLoop = null;
+
+        this.setupEventListeners();
+        this.updateUI();
+        this.draw();
+        this.ui.updateStatus('准备中');
+    }
+
+    setupEventListeners() {
+        // Keyboard controls are handled by Controls class
+        this.controls.onDirectionChange = (dir) => {
+            if (this.isRunning && !this.isPaused) {
+                this.snake.changeDirection(dir);
+            }
+        };
+
+        // Touch buttons
+        document.getElementById('upBtn').addEventListener('click', () => this.controls.setDirection('up'));
+        document.getElementById('downBtn').addEventListener('click', () => this.controls.setDirection('down'));
+        document.getElementById('leftBtn').addEventListener('click', () => this.controls.setDirection('left'));
+        document.getElementById('rightBtn').addEventListener('click', () => this.controls.setDirection('right'));
+
+        // Difficulty buttons
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.difficulty = btn.textContent.toLowerCase();
+                this.speed = parseInt(btn.dataset.speed);
+                if (this.isRunning) {
+                    this.restartGameLoop();
+                }
+            });
+        });
+
+        // Restart button
+        document.getElementById('restartButton').addEventListener('click', () => {
+            this.resetGame();
+            this.hideOverlay();
+        });
+
+        // Menu button
+        document.getElementById('menuButton').addEventListener('click', () => {
+            this.hideOverlay();
+            this.showMenu();
+        });
+
+        // Pause with space
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                this.togglePause();
+            }
+        });
+    }
+
+    start() {
+        console.log('Game start called');
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this.isPaused = false;
+        this.ui.updateStatus('游戏中');
+        this.gameLoop = setInterval(() => this.update(), this.speed);
+    }
+
+    restartGameLoop() {
+        if (this.gameLoop) {
+            clearInterval(this.gameLoop);
+        }
+        this.gameLoop = setInterval(() => this.update(), this.speed);
+    }
+
+    update() {
+        if (this.isPaused || !this.isRunning) return;
+
+        // Move snake
+        this.snake.move();
+
+        // Check collisions
+        if (this.checkCollisions()) {
+            this.gameOver();
+            return;
+        }
+
+        // Check food collision
+        if (this.snake.head.x === this.food.x && this.snake.head.y === this.food.y) {
+            this.snake.grow();
+            this.food.generate(this.snake.body);
+            this.score += 10;
+            if (this.score > this.highScore) {
+                this.highScore = this.score;
+                localStorage.setItem('snakeHighScore', this.highScore);
+            }
+            this.updateUI();
+        }
+
+        this.draw();
+    }
+
+    checkCollisions() {
+        const head = this.snake.head;
+        // Wall collision
+        if (head.x < 0 || head.x >= this.width || head.y < 0 || head.y >= this.height) {
+            return true;
+        }
+        // Self collision
+        for (let i = 1; i < this.snake.body.length; i++) {
+            if (head.x === this.snake.body[i].x && head.y === this.snake.body[i].y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    gameOver() {
+        this.isRunning = false;
+        clearInterval(this.gameLoop);
+        this.ui.updateStatus('游戏结束');
+        this.showOverlay('游戏结束', `你的得分: ${this.score}`);
+    }
+
+    resetGame() {
+        this.snake.reset();
+        this.food.generate(this.snake.body);
+        this.score = 0;
+        this.isRunning = false;
+        this.isPaused = false;
+        this.updateUI();
+        this.draw();
+    }
+
+    togglePause() {
+        if (!this.isRunning) return;
+        this.isPaused = !this.isPaused;
+        this.ui.updateStatus(this.isPaused ? '已暂停' : '游戏中');
+        if (this.isPaused) {
+            clearInterval(this.gameLoop);
+        } else {
+            this.restartGameLoop();
+        }
+    }
+
+    draw() {
+        // Clear canvas
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        // Draw grid
+        this.ctx.strokeStyle = '#222';
+        this.ctx.lineWidth = 1;
+        for (let x = 0; x <= this.width; x += this.gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.height);
+            this.ctx.stroke();
+        }
+        for (let y = 0; y <= this.height; y += this.gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.width, y);
+            this.ctx.stroke();
+        }
+
+        // Draw snake and food
+        this.snake.draw(this.ctx);
+        this.food.draw(this.ctx);
+    }
+
+    updateUI() {
+        this.ui.updateScore(this.score);
+        this.ui.updateHighScore(this.highScore);
+    }
+
+    showOverlay(title, message) {
+        const overlayTitleEl = document.getElementById('overlayTitle');
+        const overlayMessageEl = document.getElementById('overlayMessage');
+        const finalScoreEl = document.getElementById('finalScore');
+        const gameOverlayEl = document.getElementById('gameOverlay');
+        
+        if (overlayTitleEl) overlayTitleEl.textContent = title;
+        if (overlayMessageEl) overlayMessageEl.textContent = message;
+        if (finalScoreEl) finalScoreEl.textContent = this.score;
+        if (gameOverlayEl) gameOverlayEl.classList.add('active');
+        else console.warn('gameOverlay element not found');
+    }
+
+    hideOverlay() {
+        const gameOverlayEl = document.getElementById('gameOverlay');
+        if (gameOverlayEl) {
+            gameOverlayEl.classList.remove('active');
+        }
+    }
+
+    showMenu() {
+        // For future expansion
+        console.log('Show menu');
+    }
+}
+
+// Initialize game when page loads
+    console.log('DOMContentLoaded fired');
+window.addEventListener('DOMContentLoaded', () => {
+    const game = new Game();
+    window.game = game; // for debugging
+
+    // Auto-start after a short delay
+    setTimeout(() => {
+        game.start();
+    }, 500);
+});</script>
+</body>
+</html>
